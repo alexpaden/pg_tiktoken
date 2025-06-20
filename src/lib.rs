@@ -21,8 +21,8 @@ static ENCODER_CACHE: Lazy<HashMap<&'static str, CoreBPE>> = Lazy::new(|| {
         cache.insert("cl100k_base", encoder);
     }
     if let Ok(encoder) = r50k_base() {
-        cache.insert("r50k_base", encoder);
-        cache.insert("gpt2", encoder.clone());  // gpt2 is an alias for r50k_base
+        cache.insert("r50k_base", encoder.clone());
+        cache.insert("gpt2", encoder);  // gpt2 is an alias for r50k_base
     }
     if let Ok(encoder) = p50k_base() {
         cache.insert("p50k_base", encoder);
