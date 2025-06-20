@@ -23,6 +23,7 @@ pg_test = []
 [dependencies]
 pgrx = { version = "=0.12.6", features = [ "unsafe-postgres" ] }
 tiktoken-rs = { git = "https://github.com/kelvich/tiktoken-rs" }
+once_cell = "1.19"
 
 [dev-dependencies]
 pgrx-tests = "=0.12.6"

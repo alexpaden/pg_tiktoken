@@ -5,8 +5,34 @@ use tiktoken_rs::r50k_base;
 use tiktoken_rs::cl100k_base;
 use tiktoken_rs::p50k_base;
 use tiktoken_rs::p50k_edit;
+use tiktoken_rs::CoreBPE;
+
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
 
 pgrx::pg_module_magic!();
+
+// Global cache for encoders to avoid re-parsing BPE vocabulary on every call
+static ENCODER_CACHE: Lazy<HashMap<&'static str, CoreBPE>> = Lazy::new(|| {
+    let mut cache = HashMap::new();
+    
+    // Pre-load all encoders into the cache
+    if let Ok(encoder) = cl100k_base() {
+        cache.insert("cl100k_base", encoder);
+    }
+    if let Ok(encoder) = r50k_base() {
+        cache.insert("r50k_base", encoder);
+        cache.insert("gpt2", encoder.clone());  // gpt2 is an alias for r50k_base
+    }
+    if let Ok(encoder) = p50k_base() {
+        cache.insert("p50k_base", encoder);
+    }
+    if let Ok(encoder) = p50k_edit() {
+        cache.insert("p50k_edit", encoder);
+    }
+    
+    cache
+});
 
 // encode to the array of tokens using given encoding/model
 //
@@ -17,13 +43,9 @@ fn encode_with_model(encoding_selector: &str, text: &str) -> Vec<usize> {
     let encoder_name = encoding_for_model(encoding_selector)
         .unwrap_or(encoding_selector);
 
-    let encoder = match encoder_name {
-        "cl100k_base" => cl100k_base(),
-        "r50k_base" | "gpt2" => r50k_base(),
-        "p50k_base" => p50k_base(),
-        "p50k_edit" => p50k_edit(),
-        _ => error!("'{encoding_selector}': unknown model or encoder")
-    }.unwrap();
+    let encoder = ENCODER_CACHE
+        .get(encoder_name)
+        .unwrap_or_else(|| error!("'{encoding_selector}': unknown model or encoder"));
 
     encoder.encode_with_special_tokens(text)
 }
